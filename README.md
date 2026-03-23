@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT"/></a>
+  <a href="https://aur.archlinux.org/packages/vshyprland-manager"><img src="https://img.shields.io/aur/version/vshyprland-manager.svg" alt="AUR version"/></a>
 </p>
 
 No more editing `hyprland.conf` by hand. Design your desktop with a structured interface and apply changes instantly.
