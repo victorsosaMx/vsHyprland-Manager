@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=vsHyprland Manager
+Comment=Visual configuration editor for Hyprland
+Exec=vshyprland-manager
+Icon=vshyprland-manager
+Terminal=false
+Type=Application
+Categories=Settings;DesktopSettings;
+Keywords=hyprland;wayland;config;settings;
+StartupWMClass=vsHyprland Manager
