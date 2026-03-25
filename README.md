@@ -38,7 +38,7 @@ No more editing `hyprland.conf` by hand. Design your desktop with a structured i
 ## Features
 
 - **Live preview strip** — Cairo-rendered mock windows showing your active border gradient, rounding, shadow and inactive window styling in real time
-- **Appearance** — gaps, border size, rounding, active/inactive border colors (rgba gradient), opacity, shadow, blur, XWayland options; wallpaper managed via your desktop tool (e.g. swww)
+- **Appearance** — gaps, border size, rounding, active/inactive border colors (rgba gradient), opacity, shadow, blur, XWayland options; wallpaper managed via your desktop tool (e.g. awww)
 - **Animations** — 6 ready-to-apply presets out of the box (None, Subtle, Smooth, Bouncy, Snappy, Cinematic) plus full manual editor: Bezier curves and animation assignments (name, speed, curve, type)
 - **Input** — keyboard layout/options, mouse sensitivity/accel, touchpad tap/scroll, Dwindle and Master layout settings
 - **Monitors** — monitor list with resolution, position, scale, transform, and disable toggle
@@ -194,7 +194,7 @@ Every **Apply** also creates a timestamped snapshot of all modified files:
 
 - [Waybar](https://github.com/Alexays/Waybar) — status bar
 - [hyprpaper](https://github.com/hyprwm/hyprpaper) — wallpaper daemon (static)
-- [swww](https://github.com/LGFae/swww) — wallpaper daemon (animated transitions)
+- [awww](https://github.com/LGFae/awww) — wallpaper daemon (animated transitions)
 - [SwayNotificationCenter (swaync)](https://github.com/ErikReider/SwayNotificationCenter) — notification center
 - [Rofi](https://github.com/davatorium/rofi) — application launcher and dmenu
 - [wofi](https://hg.sr.ht/~scoopta/wofi) — Wayland-native application launcher
