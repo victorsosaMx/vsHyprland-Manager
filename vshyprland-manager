@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """vshyprland — visual configurator for Hyprland."""
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -76,6 +76,8 @@ THEME_LIGHT = {         # Catppuccin Latte
 def _build_css(t):
     return f"""
 * {{ font-family: "JetBrainsMono Nerd Font", monospace; }}
+label {{ color: {t['txt']}; }}
+button label {{ color: inherit; }}
 window {{ background-color: {t['bg']}; }}
 
 .header-bar {{
@@ -131,6 +133,11 @@ entry, spinbutton {{
     box-shadow: none;
 }}
 entry:focus, spinbutton:focus {{ border-color: {t['acc']}; }}
+.app-root entry, .app-root spinbutton {{
+    background-color: {t['hdr']};
+    color: {t['txt']};
+    box-shadow: none;
+}}
 
 combobox button {{
     background-color: {t['hdr']};
@@ -141,6 +148,11 @@ combobox button {{
     box-shadow: none;
 }}
 combobox button:hover {{ border-color: {t['acc']}; }}
+.app-root combobox button {{
+    background-color: {t['hdr']};
+    color: {t['txt']};
+    box-shadow: none;
+}}
 
 button {{
     background-color: {t['hdr']};
@@ -151,6 +163,11 @@ button {{
     box-shadow: none;
 }}
 button:hover {{ border-color: {t['acc']}; color: {t['acc']}; }}
+.app-root button {{
+    background-color: {t['hdr']};
+    color: {t['txt']};
+    box-shadow: none;
+}}
 
 .save-btn {{
     background-color: {t['acc']};
@@ -256,6 +273,10 @@ treeview {{
     color: {t['txt']};
     border: 1px solid {t['brd']};
 }}
+.app-root treeview {{
+    background-color: {t['hdr']};
+    color: {t['txt']};
+}}
 treeview:selected {{
     background-color: {t['acc']};
     color: {t['save_fg']};
@@ -273,8 +294,11 @@ treeview header button {{
 viewport {{ background-color: {t['bg']}; }}
 scrolledwindow {{ background-color: {t['bg']}; }}
 .app-root {{ background-color: {t['bg']}; }}
-.app-root > viewport {{ background-color: {t['bg']}; }}
-.app-root > viewport > .app-inner {{ background-color: {t['bg']}; }}
+.nb-scroll {{ background-color: {t['bg']}; }}
+.nb-scroll > viewport {{ background-color: {t['bg']}; }}
+.nb-scroll > viewport > notebook {{ background-color: {t['bg']}; }}
+notebook > stack {{ background-color: {t['bg']}; }}
+notebook > stack > * {{ background-color: {t['bg']}; }}
 
 /* ── Scrollbars ─────────────────────────────────────────────────── */
 scrollbar {{
@@ -391,6 +415,11 @@ menubutton button:hover {{ border-color: {t['acc']}; color: {t['acc']}; }}
 
 /* ── Inner horizontal notebook (Appearance sub-tabs) ────────────── */
 .inner-nb {{ background-color: {t['bg']}; }}
+.inner-nb > stack {{ background-color: {t['bg']}; }}
+.inner-nb > stack > * {{ background-color: {t['bg']}; }}
+.app-root .inner-nb {{ background-color: {t['bg']}; }}
+.app-root .inner-nb > stack {{ background-color: {t['bg']}; }}
+.app-root .inner-nb > stack > * {{ background-color: {t['bg']}; }}
 .inner-nb > header {{
     background-color: {t['bg']};
     border-bottom: 1px solid {t['brd']};
@@ -1947,7 +1976,7 @@ class VsHyprland(Gtk.Window):
         self._css_provider = Gtk.CssProvider()
         Gtk.StyleContext.add_provider_for_screen(
             Gdk.Screen.get_default(), self._css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_USER
+            Gtk.STYLE_PROVIDER_PRIORITY_USER + 200   # beat desktop-env USER-level overrides
         )
 
         self._apply_css()
@@ -2259,16 +2288,16 @@ class VsHyprland(Gtk.Window):
 
     def _build_ui(self):
         self._w = {}
-        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
-        inner.get_style_context().add_class("app-inner")
-        inner.pack_start(self._make_header(),    False, False, 0)
-        inner.pack_start(self._make_notebook(),  True,  True,  0)
-        inner.pack_start(self._make_statusbar(), False, False, 0)
+        root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        root.get_style_context().add_class("app-root")
+        root.pack_start(self._make_header(), False, False, 0)
         sw = Gtk.ScrolledWindow()
-        sw.get_style_context().add_class("app-root")
-        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        sw.add(inner)
-        self.add(sw)
+        sw.get_style_context().add_class("nb-scroll")
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        sw.add(self._make_notebook())
+        root.pack_start(sw, True, True, 0)
+        root.pack_start(self._make_statusbar(), False, False, 0)
+        self.add(root)
 
     def _make_header(self):
         hdr = Gtk.Box(spacing=8)
@@ -2399,31 +2428,48 @@ class VsHyprland(Gtk.Window):
         nb = Gtk.Notebook()
         nb.set_tab_pos(Gtk.PositionType.LEFT)
         nb.set_show_border(False)
-        pages = [
-            ("󰄶  Presets",     self._page_presets()),
-            ("󰊠  Setup",       self._page_setup()),
-            ("󰔉  Appearance",  self._page_appearance()),
-            ("󰑊  Animations",  self._page_animations()),
-            ("󰌌  Input",       self._page_input()),
-            ("󰍹  Monitors",    self._page_monitors()),
-            ("󰘳  Keybindings", self._page_keybindings()),
-            ("󰊠  Rules",       self._page_rules()),
-            ("󰐛  Autostart",   self._page_autostart()),
-            ("󰙪  Environment", self._page_environment()),
-            ("󰕮  Plugins",     self._page_plugins()),
-            ("󰄾  Scripts",     self._page_scripts()),
-            ("󰆦  vsHub",       self._page_hub()),
-            ("󰋼  About",       self._page_about()),
+        self._tab_defs = [
+            ("󰄶  Presets",     self._page_presets),
+            ("󰊠  Setup",       self._page_setup),
+            ("󰔉  Appearance",  self._page_appearance),
+            ("󰑊  Animations",  self._page_animations),
+            ("󰌌  Input",       self._page_input),
+            ("󰍹  Monitors",    self._page_monitors),
+            ("󰘳  Keybindings", self._page_keybindings),
+            ("󰊠  Rules",       self._page_rules),
+            ("󰐛  Autostart",   self._page_autostart),
+            ("󰙪  Environment", self._page_environment),
+            ("󰕮  Plugins",     self._page_plugins),
+            ("󰄾  Scripts",     self._page_scripts),
+            ("󰆦  vsHub",       self._page_hub),
+            ("󰋼  About",       self._page_about),
         ]
-        for label, page in pages:
+        self._tabs_built = set()
+        for label, _ in self._tab_defs:
+            placeholder = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             lbl = Gtk.Label()
             lbl.set_markup(f'<span font_desc="JetBrainsMono Nerd Font 11">{label}</span>')
             lbl.set_xalign(0)
-            nb.append_page(page, lbl)
+            nb.append_page(placeholder, lbl)
         self._nb = nb
-        self._nb_plugins_idx = len(pages) - 4  # index 10
-        self._nb_hub_idx     = len(pages) - 2  # index 12
+        self._nb_plugins_idx = len(self._tab_defs) - 4  # index 10
+        self._nb_hub_idx     = len(self._tab_defs) - 2  # index 12
+        nb.connect("switch-page", self._on_tab_switch)
+        self._build_tab(0)
         return nb
+
+    def _build_tab(self, idx):
+        if idx in self._tabs_built:
+            return
+        self._tabs_built.add(idx)
+        _, builder = self._tab_defs[idx]
+        content = builder()
+        placeholder = self._nb.get_nth_page(idx)
+        placeholder.pack_start(content, True, True, 0)
+        placeholder.show_all()
+
+    def _on_tab_switch(self, nb, page, idx):
+        self._build_tab(idx)
 
     def _reload_tab(self, page_builder, idx, label, keep_position=False):
         """Rebuild a notebook tab in-place."""
@@ -2431,10 +2477,12 @@ class VsHyprland(Gtk.Window):
         was_current = nb.get_current_page() == idx
         nb.remove_page(idx)
         new_page = page_builder()
-        lbl = Gtk.Label(label=label)
+        lbl = Gtk.Label()
+        lbl.set_markup(f'<span font_desc="JetBrainsMono Nerd Font 11">{label}</span>')
         lbl.set_xalign(0)
         nb.insert_page(new_page, lbl, idx)
         new_page.show_all()
+        self._tabs_built.add(idx)
         if not keep_position or was_current:
             nb.set_current_page(idx)
 
@@ -2692,60 +2740,96 @@ class VsHyprland(Gtk.Window):
         thumb_sw.add(flow)
         outer.pack_start(thumb_sw, False, False, 4)
 
+        _all_files   = [None]   # full sorted file list for current folder
+        _loaded_up_to = [0]    # how many thumbs have been added to flow
+        _BATCH = 20
+
+        def _make_thumb_widget(fpath):
+            pb_box = [None]     # filled by background thread
+            da = Gtk.DrawingArea()
+            da.set_size_request(THUMB_W, THUMB_H)
+            da.get_style_context().add_class("plugin-card")
+
+            def _draw_thumb(widget, cr, fp=fpath):
+                w = widget.get_allocated_width()
+                h = widget.get_allocated_height()
+                p = pb_box[0]
+                if p:
+                    scale = max(w / p.get_width(), h / p.get_height())
+                    sw2 = int(p.get_width() * scale)
+                    sh2 = int(p.get_height() * scale)
+                    scaled = p.scale_simple(sw2, sh2, GdkPixbuf.InterpType.BILINEAR)
+                    Gdk.cairo_set_source_pixbuf(cr, scaled,
+                                                (w - sw2) // 2, (h - sh2) // 2)
+                    cr.paint()
+                    if fp == _current_path[0]:
+                        cr.set_source_rgba(0.67, 0.82, 0.56, 0.3)
+                        cr.rectangle(0, 0, w, h)
+                        cr.fill()
+                        cr.set_source_rgba(0.67, 0.82, 0.56, 0.9)
+                        cr.set_line_width(2.5)
+                        cr.rectangle(1, 1, w - 2, h - 2)
+                        cr.stroke()
+                else:
+                    cr.set_source_rgb(0.15, 0.17, 0.13)
+                    cr.rectangle(0, 0, w, h)
+                    cr.fill()
+
+            da.connect("draw", _draw_thumb)
+            ev = Gtk.EventBox()
+            ev.add(da)
+
+            def _on_click(widget, event, fp=fpath):
+                if event.button == 1:
+                    _set_wallpaper(fp)
+                    flow.queue_draw()
+
+            ev.connect("button-press-event", _on_click)
+            ev.set_tooltip_text(os.path.basename(fpath))
+
+            def _load_thumb_bg(fp=fpath):
+                pb = _load_pixbuf(fp, THUMB_W * 2, THUMB_H * 2)
+                def _set(_):
+                    pb_box[0] = pb
+                    da.queue_draw()
+                    return False
+                GLib.idle_add(_set, None)
+
+            threading.Thread(target=_load_thumb_bg, daemon=True).start()
+            return ev
+
+        def _append_batch():
+            files = _all_files[0]
+            if not files:
+                return
+            start = _loaded_up_to[0]
+            end   = min(start + _BATCH, len(files))
+            for fpath in files[start:end]:
+                flow.add(_make_thumb_widget(fpath))
+            _loaded_up_to[0] = end
+            flow.show_all()
+
+        def _on_scroll_changed(adj):
+            if adj.get_value() >= adj.get_upper() - adj.get_page_size() - 40:
+                if _loaded_up_to[0] < len(_all_files[0] or []):
+                    _append_batch()
+
+        thumb_sw.get_vadjustment().connect("value-changed", _on_scroll_changed)
+
         def _populate_grid(folder):
             for ch in list(flow.get_children()):
                 flow.remove(ch)
+            _loaded_up_to[0] = 0
             if not folder or not os.path.isdir(folder):
                 flow.show_all()
                 return
             files = sorted(
-                p for fn in os.listdir(folder)
+                os.path.join(folder, fn)
+                for fn in os.listdir(folder)
                 if os.path.splitext(fn)[1].lower() in _IMG_EXTS
-                for p in [os.path.join(folder, fn)]
-            )[:60]
-            for fpath in files:
-                pb = _load_pixbuf(fpath, THUMB_W * 2, THUMB_H * 2)
-                da = Gtk.DrawingArea()
-                da.set_size_request(THUMB_W, THUMB_H)
-                da.get_style_context().add_class("plugin-card")
-
-                def _draw_thumb(widget, cr, p=pb, fp=fpath):
-                    w = widget.get_allocated_width()
-                    h = widget.get_allocated_height()
-                    if p:
-                        scale = max(w / p.get_width(), h / p.get_height())
-                        sw2 = int(p.get_width() * scale)
-                        sh2 = int(p.get_height() * scale)
-                        scaled = p.scale_simple(sw2, sh2, GdkPixbuf.InterpType.BILINEAR)
-                        Gdk.cairo_set_source_pixbuf(cr, scaled,
-                                                    (w - sw2) // 2, (h - sh2) // 2)
-                        cr.paint()
-                        if fp == _current_path[0]:
-                            cr.set_source_rgba(0.67, 0.82, 0.56, 0.3)
-                            cr.rectangle(0, 0, w, h)
-                            cr.fill()
-                            cr.set_source_rgba(0.67, 0.82, 0.56, 0.9)
-                            cr.set_line_width(2.5)
-                            cr.rectangle(1, 1, w - 2, h - 2)
-                            cr.stroke()
-                    else:
-                        cr.set_source_rgb(0.15, 0.17, 0.13)
-                        cr.rectangle(0, 0, w, h)
-                        cr.fill()
-
-                da.connect("draw", _draw_thumb)
-                ev = Gtk.EventBox()
-                ev.add(da)
-
-                def _on_click(widget, event, fp=fpath):
-                    if event.button == 1:
-                        _set_wallpaper(fp)
-                        flow.queue_draw()
-
-                ev.connect("button-press-event", _on_click)
-                ev.set_tooltip_text(os.path.basename(fpath))
-                flow.add(ev)
-            flow.show_all()
+            )
+            _all_files[0] = files
+            _append_batch()
 
         def _choose_folder(*_):
             dlg = Gtk.FileChooserDialog(
@@ -2951,7 +3035,7 @@ class VsHyprland(Gtk.Window):
         def_btn.connect("clicked", self._load_appearance_defaults)
         outer.pack_start(def_btn, False, False, 0)
 
-        return _scrolled(outer)
+        return outer
 
     def _page_animations(self):
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -3282,7 +3366,7 @@ class VsHyprland(Gtk.Window):
         # Initial detection — sets highlight + label on page open
         self._sync_preset_highlight()
 
-        return _scrolled(outer)
+        return outer
 
     def _page_input(self):
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
@@ -3895,7 +3979,7 @@ class VsHyprland(Gtk.Window):
                 "Leave at 0 if you use hyprpaper, awww or any wallpaper daemon."), False, False, 4)
 
         outer.pack_start(inp_nb, False, False, 0)
-        return _scrolled(outer)
+        return outer
 
     def _page_monitors(self):
         t = self._theme
@@ -4382,7 +4466,7 @@ class VsHyprland(Gtk.Window):
         outer.pack_start(btns, False, False, 0)
 
         _update_detail()
-        return _scrolled(outer)
+        return outer
 
     def _page_keybindings(self):
         # ── Built-in presets ──────────────────────────────────────────────────
@@ -4799,7 +4883,7 @@ class VsHyprland(Gtk.Window):
         bt.pack_start(bind_btns, False, False, 0)
 
         outer.pack_start(kb_nb, False, False, 0)
-        return _scrolled(outer)
+        return outer
 
     def _page_rules(self):
         # ── Built-in rule presets ─────────────────────────────────────────────
@@ -5129,7 +5213,7 @@ class VsHyprland(Gtk.Window):
         blt.pack_start(bl_btns, False, False, 0)
 
         outer.pack_start(ru_nb, False, False, 0)
-        return _scrolled(outer)
+        return outer
 
     def _page_autostart(self):
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -5232,9 +5316,11 @@ class VsHyprland(Gtk.Window):
 
         sw = Gtk.ScrolledWindow()
         sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        sw.set_min_content_height(300)
+        sw.set_min_content_height(200)
+        sw.set_max_content_height(400)
+        sw.set_propagate_natural_height(True)
         sw.add(tv)
-        outer.pack_start(sw, True, True, 0)
+        outer.pack_start(sw, False, False, 0)
 
         btns = Gtk.Box(spacing=8)
         add_a = Gtk.Button(label="+ Add")
@@ -5297,9 +5383,11 @@ class VsHyprland(Gtk.Window):
 
         sw = Gtk.ScrolledWindow()
         sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        sw.set_min_content_height(300)
+        sw.set_min_content_height(200)
+        sw.set_max_content_height(400)
+        sw.set_propagate_natural_height(True)
         sw.add(tv)
-        outer.pack_start(sw, True, True, 0)
+        outer.pack_start(sw, False, False, 0)
 
         btns = Gtk.Box(spacing=8)
         add_e = Gtk.Button(label="+ Add")
@@ -6067,7 +6155,7 @@ class VsHyprland(Gtk.Window):
                 False, False, 8
             )
 
-        return _scrolled(outer)
+        return outer
 
     # ── Scripts tab ────────────────────────────────────────────────────────────
 
@@ -6560,7 +6648,7 @@ echo "All done!"
         # Fetch manifest in background (silently updates cache + reloads tab if changed)
         threading.Thread(target=_fetch_manifest, daemon=True).start()
 
-        return _scrolled(outer)
+        return outer
 
     def _page_about(self):
         t = self._theme
@@ -6784,13 +6872,7 @@ echo "All done!"
         orig_status.set_margin_top(6)
         outer.pack_start(orig_status, False, False, 0)
 
-        sw = Gtk.ScrolledWindow()
-        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        vp = Gtk.Viewport()
-        vp.set_shadow_type(Gtk.ShadowType.NONE)
-        vp.add(outer)
-        sw.add(vp)
-        return sw
+        return outer
 
     # ── save / apply ───────────────────────────────────────────────────────────
 
@@ -7499,7 +7581,7 @@ echo "All done!"
         ))
         outer.pack_start(hyprpm_btn, False, False, 4)
 
-        return _scrolled(outer)
+        return outer
 
     def _page_presets(self):
         t = self._theme
@@ -7648,7 +7730,7 @@ echo "All done!"
                 f'<span foreground="{t["dim"]}">● Custom (no preset matched)</span>'
             )
 
-        return _scrolled(outer)
+        return outer
 
     def _draw_preset_preview(self, widget, cr, cfg):
         w = widget.get_allocated_width()

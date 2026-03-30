@@ -5,6 +5,20 @@ Format: [SemVer](https://semver.org) — newest first.
 
 ---
 
+## [1.2.0] — 2026-03-30
+
+### Fixed
+
+- **UI — Lazy tab loading** — Tabs are now built on demand (only when first visited), reducing startup time significantly. Previously all 14 tabs were constructed at launch.
+- **UI — Layout** — Removed the outer `ScrolledWindow` that wrapped the entire UI. Header and statusbar are now always visible; a single scroll covers only the tab content area. Apply button no longer disappears when scrolling.
+- **UI — Double scrollbar** — Eliminated the double-scrollbar issue that occurred when inner tab scrollbars and the outer one coexisted.
+- **UI — Light theme** — Fixed controls (entries, spinbuttons, comboboxes, preset cards, treeviews, inner notebooks) rendering with dark backgrounds when the light theme was active. GTK system theme was overriding app CSS; resolved by increasing selector specificity via `.app-root` prefix.
+- **UI — Label colors** — Added global `label { color }` and `button label { color: inherit }` CSS rules to prevent GTK from overriding text colors with the system theme on dark/light toggle.
+- **Wallpaper grid** — Folder thumbnails now load in batches of 20 in a background thread; additional images load on scroll. Previously all thumbnails were loaded synchronously.
+- **Autostart / Environment tabs** — Treeview no longer expands to fill the entire screen; it now sizes to its content (max 400 px) so surrounding space is not wasted.
+
+---
+
 ## [1.1.0] — 2026-03-25
 
 ### Changed
